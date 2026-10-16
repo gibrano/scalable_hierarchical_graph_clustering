@@ -1,0 +1,51 @@
+\subsection{Temporal Email Network: Department 1}
+
+We evaluate LSH-HLA on the Department 1 subset of the email-Eu-core-temporal dataset. The complete department file contains 309 distinct users and 61,046 temporal interactions. We select the first 1,000 non-empty hourly layers, spanning the relative interval from day 0 at 00:00 to day 98 at 14:00 (exclusive). This interval contains 8,539 interactions involving 255 active users. All layers retain a common set of 309 nodes, with inactive users represented as isolated nodes. Repeated interactions are summed as edge weights, and message direction is discarded. The 1,366 hours without interactions within the selected interval are omitted from clustering. These results therefore characterize a selected interval of within-department communication rather than the entire institutional network.
+
+\subsubsection*{Computational Efficiency and Parameter Evaluation}
+Table~\ref{tab:dept1_performance} reports means and sample standard deviations over ten runs. The baseline uses exhaustive minimum-distance selection with bounded candidate storage; consequently, the measured timings concern this implementation and should not be generalized to every implementation of hierarchical clustering. The LSH configurations use five projections. The number of clusters is selected by the elbow criterion, rather than being an independently established optimum.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrr}
+\hline
+Method & Initial buckets & $k^*$ & Selected clusters & Time (s) \\
+\hline
+Baseline & -- & $983\pm0$ & $17\pm0$ & $3245.58\pm8.47$ \\
+LSH-HLA, $B=10$ & $595.7\pm22.28$ & $981.7\pm6.86$ & $18.3\pm6.86$ & $1694.77\pm66.73$ \\
+LSH-HLA, $B=40$ & $671.4\pm13.28$ & $978.9\pm12.56$ & $21.1\pm12.56$ & $2018.36\pm49.00$ \\
+LSH-HLA, $B=80$ & $671.8\pm13.13$ & $978.8\pm12.26$ & $21.2\pm12.26$ & $2018.12\pm47.29$ \\
+LSH-HLA, $B=300$ & $671.8\pm13.13$ & $978.8\pm12.26$ & $21.2\pm12.26$ & $2020.45\pm44.23$ \\
+\hline
+\end{tabular}
+\caption{Department 1 results. Baseline timings come from the repeated baseline experiment; LSH timings come from the parameter-sensitivity experiment.}
+\label{tab:dept1_performance}
+\end{table}
+
+Relative to the mean baseline runtime, $B=10$ achieves a speedup of $1.92\times$, corresponding to a 47.8\% reduction in time. The remaining configurations achieve approximately $1.61\times$ speedup, or a 37.8\% reduction. In the separately reported illustrative run, the baseline requires 3183.45 seconds and LSH-HLA with $B=40$ requires 2024.50 seconds, yielding a speedup of $1.57\times$. These single-run measurements should be distinguished from repeated-run averages.
+
+\subsubsection*{Hierarchical Aggregation and Quality ($q$)}
+The saved quality plot shows a substantial separation between the two trajectories. In the illustrative run, the baseline quality rises toward approximately 0.84 near its selected cut, whereas the LSH trajectory remains around 0.60--0.63 over much of the later hierarchy. These values are approximate readings from the figure. The final decrease to zero occurs by construction when only one cluster remains and does not establish agreement between hierarchies.
+
+The elbow criterion selects fusion step $k^*=983$ for the baseline and $k^*=979$ for LSH-HLA with $B=40$, corresponding to 17 and 21 clusters, respectively. Although both cuts occur late in the aggregation process, the distinct quality trajectories show that the hashing restrictions alter intermediate aggregation. The quality function assigns equal weight to each active cluster regardless of its number of constituent layers; consequently, a partition containing one large cluster and several small groups must be interpreted alongside its cluster-size distribution.
+
+\subsubsection*{Cluster Composition and Local Patterns}
+Both illustrative partitions are strongly imbalanced. The baseline assigns 971 layers to its largest cluster and distributes the remaining 29 across 16 clusters. LSH-HLA assigns 960 layers to its largest cluster and distributes 40 layers across 20 smaller clusters. The largest clusters contain 8503 and 8388 interactions, respectively, out of 8539. A similar largest-cluster size does not imply preservation of the smaller groups: only six layers lie outside the largest cluster under both methods, showing that the methods leave different subsets of hourly layers separate.
+
+The baseline's smaller groups contain on average 2.34 active users and 1.24 interactions per layer, compared with 5.95 users and 3.78 interactions for LSH-HLA. The approximation therefore changes which activity profiles remain separate. This observation does not by itself establish better anomaly detection or more meaningful communities.
+
+A concrete preserved pattern is the three-layer group at relative day--hour pairs $(40,19)$, $(43,23)$, and $(50,18)$. The first layer contains the undirected pairs $(299,228)$, $(286,126)$, and $(286,14)$; the latter two contain $(286,126)$ and $(299,228)$, respectively. Both methods place these layers in the same three-member cluster. This provides a specific example of retained local structure across nonconsecutive times, without demonstrating general preservation of local neighborhoods. All identifiers are local to Department 1.
+
+\subsubsection*{The Influence of Parameter $B$}
+Increasing $B$ from 10 to 40 raises the mean number of initial buckets from 595.7 to 671.4 and the mean runtime from 1694.77 to 2018.36 seconds. The mean number of selected clusters also increases, from 18.3 to 21.1, with greater variability across runs. Thus, in this range, finer bucket discretization is accompanied by higher computational cost and more variable cluster counts.
+
+Further increases to $B=80$ and $B=300$ produce almost unchanged aggregate results: both configurations yield $671.8\pm13.13$ initial buckets and $21.2\pm12.26$ selected clusters, with mean runtimes close to 2020 seconds. These observations indicate a plateau in the measured response to $B$. Identical aggregate statistics do not establish that the complete hierarchies or memberships are identical, and the results do not identify an optimal structural resolution at either value.
+
+In the illustrative $B=40$ run, 331 of the 999 merges occur under bucket restrictions and the remaining 668 occur after switching to global search. The initial approximation therefore influences the hierarchy even though most subsequent merges are selected globally. This mechanism provides context for the computational benefit and the differences in the resulting cluster composition.
+
+\subsubsection*{Run-to-Run Variability and Interpretation}
+For $B=40$, the separate ten-run stability experiment selects between 10 and 51 clusters, with a mean of $21.1\pm12.56$. Its mean runtime is $2090.18\pm60.31$ seconds. These timings belong to a separate execution series from the sensitivity results in Table~\ref{tab:dept1_performance}. Runtime varies relatively little within the series, whereas the selected number of clusters is sensitive to the random projections and the resulting elbow location. Variation in cluster counts alone does not quantify membership stability.
+
+Among the tested configurations, $B=10$ has the lowest mean runtime and the lowest standard deviation of the selected cluster count. It is therefore the most economical tested setting, but these observations do not establish that it gives the most meaningful temporal partition. Both illustrative methods produce a dominant cluster containing at least 96\% of the hourly layers, together with small groups whose activity profiles and memberships differ. The preserved three-layer example demonstrates a specific recurring communication pattern retained by both methods.
+
+Overall, the experiment demonstrates reduced runtime for LSH-HLA while revealing changes in intermediate quality and in the composition of the smaller clusters. Since every user belongs to Department 1, departmental composition is constant and cannot validate the partition. The temporal distribution of clusters, their activity profiles, and directly inspected shared connections provide the relevant descriptive evidence for this experiment.
